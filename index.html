@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teklif Oluşturucu - İmamoğlu Forklift</title>
+    <!-- PDF oluşturma kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #333;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: var(--primary-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Kontrol Paneli */
+        .controls {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-add {
+            background-color: #10b981;
+        }
+
+        .btn-add:hover {
+            background-color: #059669;
+        }
+
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Teklif Konteyneri (A4 formatı için optimize) */
+        .invoice-wrapper {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            /* Ekranda düzgün durması için */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        #invoice-container {
+            width: 100%;
+            min-width: 750px;
+            /* Mobilde scroll çıkması ve dizilimin bozulmaması için */
+            padding: 40px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+
+        /* Düzenlenebilir alan stili */
+        [contenteditable="true"] {
+            outline: none;
+            border-bottom: 1px dashed transparent;
+            transition: border-color 0.2s;
+        }
+
+        [contenteditable="true"]:hover,
+        [contenteditable="true"]:focus {
+            border-bottom: 1px dashed #2563eb;
+            background-color: #f8fafc;
+        }
+
+        /* Başlık ve Logolar */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1e3a8a;
+        }
+
+        .company-info p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .title h2 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+            color: #333;
+        }
+
+        /* Müşteri ve Teklif Detayları */
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .client-info,
+        .quote-info {
+            width: 48%;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .info-row strong {
+            width: 100px;
+        }
+
+        .info-row>span {
+            display: flex;
+            flex: 1;
+            gap: 4px;
+        }
+
+        .info-row input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-bottom: 1px dashed transparent;
+            outline: none;
+            padding: 0 2px;
+            font: inherit;
+            color: inherit;
+            background: transparent;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .info-row input:hover,
+        .info-row input:focus {
+            border-bottom-color: #2563eb;
+            background-color: #f8fafc;
+        }
+
+        .intro-text {
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Tablo */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: bold;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .col-sno {
+            width: 5%;
+            text-align: center;
+        }
+
+        .col-desc {
+            width: 45%;
+        }
+
+        .col-qty {
+            width: 15%;
+            text-align: center;
+        }
+
+        .col-price {
+            width: 17%;
+            text-align: right;
+        }
+
+        .col-total {
+            width: 18%;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .col-action {
+            width: 60px;
+            text-align: center;
+        }
+
+        .desc-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .desc-sub {
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        /* Toplamlar */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+
+        .totals-table {
+            width: 300px;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .totals-table tr td:first-child {
+            font-weight: bold;
+            background-color: #f9fafb;
+            text-align: left;
+        }
+
+        .tax-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            color: #374151;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .tax-inclusion {
+            appearance: none;
+            min-width: 120px;
+            padding: 9px 32px 9px 12px;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            background-image: linear-gradient(45deg, transparent 50%, #2563eb 50%), linear-gradient(135deg, #2563eb 50%, transparent 50%);
+            background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+        }
+
+        .tax-inclusion:focus {
+            outline: 2px solid #93c5fd;
+            outline-offset: 2px;
+        }
+
+        .grand-total {
+            font-size: 16px;
+            color: #1e3a8a;
+            font-weight: bold;
+        }
+
+        /* Notlar ve Şartlar */
+        .notes-section {
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .notes-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .notes-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        /* İmzalar */
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        .signature-box {
+            width: 40%;
+            text-align: center;
+        }
+
+        .signature-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .signature-company {
+            font-size: 13px;
+            color: #555;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: bold;
+        }
+
+        /* PDF modunda gizlenecekler */
+        .hide-on-pdf {
+            display: table-cell;
+        }
+
+        /* PDF Oluşturulurken devredecek class (Mobil uyumluluğu geçersiz kılar, sabit A4 yaratır) */
+        .pdf-mode {
+            width: 210mm !important;
+            padding: 15mm 20mm !important;
+            max-width: none !important;
+            transform: none !important;
+        }
+
+        .pdf-mode .hide-on-pdf {
+            display: none !important;
+        }
+
+        @media screen and (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .tax-control {
+                width: 100%;
+                margin-left: 0;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls">
+        <button class="btn btn-add" onclick="addRow()">+ Yeni Satır Ekle</button>
+        <button class="btn" onclick="generatePDF()">📄 PDF Olarak İndir</button>
+        <label class="tax-control" for="tax-inclusion">
+            KDV Durumu
+            <select id="tax-inclusion" class="tax-inclusion">
+                <option value="excluded">KDV Hariç</option>
+                <option value="included">KDV Dahil (+%20)</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="invoice-wrapper">
+        <div id="invoice-container">
+
+            <!-- Başlık -->
+            <div class="header">
+                <div class="company-info">
+                    <h1 contenteditable="true">İMAMOĞLU FORKLİFT</h1>
+                    <p contenteditable="true">Yetkili: Murat Güzel</p>
+                </div>
+                <div class="title">
+                    <h2 contenteditable="true">FİYAT TEKLİFİ</h2>
+                </div>
+            </div>
+
+            <!-- Detaylar -->
+            <div class="details-section">
+                <div class="client-info">
+                    <div class="info-row">
+                        <strong>SAYIN</strong>
+                        <span>: <input type="text" placeholder="Alıcı Adı" aria-label="Alıcı Adı"></span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Tel</strong>
+                        <span>: <input type="text" placeholder="Telefon Numarası" aria-label="Telefon Numarası"></span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Konu</strong>
+                        <span>: <input type="text" placeholder="Konu" aria-label="Konu"></span>
+                    </div>
+                </div>
+                <div class="quote-info">
+                    <div class="info-row">
+                        <strong>Teklif No</strong>
+                        <span>: <input type="text" placeholder="Teklif No" aria-label="Teklif No"></span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Tarih</strong>
+                        <span>: <input type="text" id="quote-date" placeholder="Tarih" aria-label="Tarih"></span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Geçerlilik</strong>
+                        <span>: <input type="text" placeholder="Geçerlilik" aria-label="Geçerlilik"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Giriş Metni -->
+            <div class="intro-text" contenteditable="true" placeholder="Giriş Metni">
+
+            </div>
+
+            <!-- Tablo -->
+            <table id="invoice-table">
+                <thead>
+                    <tr>
+                        <th class="col-sno">S.No</th>
+                        <th class="col-desc">HİZMET AÇIKLAMASI</th>
+                        <th class="col-qty">MİKTAR</th>
+                        <th class="col-price">BİRİM FİYAT</th>
+                        <th class="col-total">TUTAR</th>
+                        <th class="col-action hide-on-pdf">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr>
+                        <td class="col-sno" contenteditable="true">1</td>
+                        <td class="col-desc">
+                            <div class="desc-title" contenteditable="true" placeholder="Hizmet Açıklaması"></div>
+                            <div class="desc-sub" contenteditable="true" placeholder="Hizmet Açıklaması"></div>
+                        </td>
+                        <td class="col-qty row-qty" contenteditable="true" placeholder="Miktar"></td>
+                        <td class="col-price row-price" contenteditable="true" placeholder="Birim Fiyat"></td>
+                        <td class="col-total row-total"></td>
+                        <td class="col-action hide-on-pdf"><button class="btn-delete"
+                                onclick="deleteRow(this)">Sil</button></td>
+                    </tr>
+
+                </tbody>
+            </table>
+
+            <!-- Toplamlar -->
+            <div class="totals-section">
+                <table class="totals-table">
+                    <tr>
+                        <td>ARA TOPLAM</td>
+                        <td id="val-subtotal"></td>
+                    </tr>
+                    <tr>
+                        <td>KDV (<span contenteditable="true" id="tax-rate">%20</span>)</td>
+                        <td id="val-tax"></td>
+                    </tr>
+                    <tr>
+                        <td>GENEL TOPLAM</td>
+                        <td class="grand-total" id="val-grandtotal"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Notlar -->
+            <div class="notes-section">
+                <h3 contenteditable="true">Notlar ve Şartlar</h3>
+                <ul class="notes-list" contenteditable="true">
+                    <li>KDV, yukarıdaki KDV durumu seçimine göre hesaplanır.</li>
+                    <li>Teklif, düzenlendiği tarihten itibaren 7 (yedi) gün süreyle geçerlidir.</li>
+                    <li>Ödeme, hizmetin tamamlanmasını takiben yapılır. (Ödeme koşulları karşılıklı mutabakatla
+                        belirlenebilir.)</li>
+                    <li>Malzeme cinsi, ölçü ve uygulama alanına bağlı değişiklikler teklifte farklılığa yol açabilir.
+                    </li>
+                </ul>
+                <p style="margin-top: 15px;" contenteditable="true">Bilgilerinize sunar, iyi çalışmalar dileriz.</p>
+                <p style="margin-top: 5px;" contenteditable="true">Saygılarımızla,</p>
+            </div>
+
+            <!-- İmzalar -->
+            <div class="signatures">
+                <div class="signature-box">
+                    <div class="signature-title" contenteditable="true">TEKLİFİ VEREN</div>
+                    <div class="signature-name" contenteditable="true">Murat GÜZEL</div>
+                    <div class="signature-company" contenteditable="true">İmamoğlu Forklift</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-title" contenteditable="true">TEKLİFİ ONAYLAYAN</div>
+                    <div class="signature-name" contenteditable="true">Kaşe / İmza</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer" contenteditable="true">
+                İMAMOĞLU FORKLİFT | Murat Güzel 0539 325 84 67
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Türkçe sayıları algılayan ve parse eden fonksiyon
+        function parseTurkishNumber(str) {
+            if (!str) return 0;
+            // Harfleri ve boşlukları temizle (TL, Adet vb. uçsun)
+            let cleaned = str.replace(/[A-Za-z\s]/g, '').trim();
+            // Türkçe format: "4.750,00" -> Noktayı yok et, Virgülü noktaya çevir
+            if (cleaned.indexOf(',') > -1) {
+                cleaned = cleaned.replace(/\./g, '');
+                cleaned = cleaned.replace(',', '.');
+            }
+            let num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // Sayıyı Türkçe formata geri döndüren fonksiyon
+        function formatTurkishNumber(num) {
+            return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Toplamları hesaplayan ana fonksiyon
+        function calculateTotals() {
+            const rows = document.querySelectorAll('#table-body tr');
+            let subTotal = 0;
+
+            rows.forEach(row => {
+                const qtyText = row.querySelector('.row-qty').innerText;
+                const priceText = row.querySelector('.row-price').innerText;
+
+                const qty = parseTurkishNumber(qtyText);
+                const price = parseTurkishNumber(priceText);
+                const total = qty * price;
+
+                // Satır toplamını yaz
+                row.querySelector('.row-total').innerText = formatTurkishNumber(total) + ' TL';
+
+                subTotal += total;
+            });
+
+            // KDV oranını al (örn: "%20" yazısından sadece 20 yi al)
+            const taxRateText = document.getElementById('tax-rate').innerText;
+            let taxRate = parseTurkishNumber(taxRateText) || 20;
+
+            const taxIncluded = document.getElementById('tax-inclusion').value === 'included';
+            let taxTotal;
+            let grandTotal;
+
+            if (taxIncluded) {
+                taxTotal = subTotal * (taxRate / 100);
+                grandTotal = subTotal + taxTotal;
+            } else {
+                // KDV hariç seçildiğinde girilen fiyatlara KDV eklenmez.
+                taxTotal = 0;
+                grandTotal = subTotal;
+            }
+
+            // Sonuçları ekrana yaz
+            document.getElementById('val-subtotal').innerText = formatTurkishNumber(subTotal) + ' TL';
+            document.getElementById('val-tax').innerText = formatTurkishNumber(taxTotal) + ' TL';
+            document.getElementById('val-grandtotal').innerText = formatTurkishNumber(grandTotal) + ' TL';
+        }
+
+        // Klavyeden veri girildikçe hesaplamayı tetikle
+        document.getElementById('invoice-container').addEventListener('input', function (e) {
+            if (e.target.classList.contains('row-qty') ||
+                e.target.classList.contains('row-price') ||
+                e.target.id === 'tax-rate') {
+                calculateTotals();
+            }
+        });
+
+        // KDV dahil/hariç seçimi değiştiğinde toplamları güncelle
+        document.getElementById('tax-inclusion').addEventListener('change', calculateTotals);
+
+        // Yeni Satır Ekleme
+        function addRow() {
+            const tbody = document.getElementById('table-body');
+            const rowCount = tbody.children.length + 1;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="col-sno" contenteditable="true">${rowCount}</td>
+                <td class="col-desc">
+                    <div class="desc-title" contenteditable="true">Yeni Hizmet Adı</div>
+                    <div class="desc-sub" contenteditable="true">Hizmet açıklaması detayları</div>
+                </td>
+                <td class="col-qty row-qty" contenteditable="true">1 Adet</td>
+                <td class="col-price row-price" contenteditable="true">0,00 TL</td>
+                <td class="col-total row-total">0,00 TL</td>
+                <td class="col-action hide-on-pdf"><button class="btn-delete" onclick="deleteRow(this)">Sil</button></td>
+            `;
+            tbody.appendChild(tr);
+            calculateTotals();
+        }
+
+        // Satır Silme
+        function deleteRow(btn) {
+            btn.closest('tr').remove();
+
+            // Sıra numaralarını güncelle
+            const rows = document.querySelectorAll('#table-body tr');
+            rows.forEach((row, index) => {
+                row.querySelector('.col-sno').innerText = index + 1;
+            });
+
+            calculateTotals();
+        }
+
+        // PDF Olarak İndir (Kayma Yaptırmayan Özel Ayar)
+        async function generatePDF() {
+            const element = document.getElementById('invoice-container');
+
+            // Telefonda mobil görünüme geçse bile, PDF oluştururken 
+            // zorunlu masaüstü (A4) boyutlarına geçmesi için class ekliyoruz.
+            element.classList.add('pdf-mode');
+
+            // Teklif no'yu dosya adı yapmak için çekelim (yoksa varsayılan)
+            let fileName = 'Fiyat_Teklifi.pdf';
+            const teklifNo = document.querySelector('.quote-info .info-row input');
+            if (teklifNo && teklifNo.value.trim()) {
+                fileName = teklifNo.value.trim() + '.pdf'; // Teklif No kısmı
+            }
+
+            const opt = {
+                margin: 0,
+                filename: fileName,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // PDF oluştur
+            await html2pdf().set(opt).from(element).save();
+
+            // Sınıfı geri alıp ekranı tekrar normal haline döndür
+            element.classList.remove('pdf-mode');
+        }
+
+        // Sayfa yüklendiğinde ilk hesaplamayı yap
+        window.onload = () => {
+            const quoteDate = document.getElementById('quote-date');
+            quoteDate.value = new Intl.DateTimeFormat('tr-TR').format(new Date());
+            calculateTotals();
+        };
+    </script>
+</body>
+
+</html>
