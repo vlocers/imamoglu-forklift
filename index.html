@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teklif Oluşturucu - İmamoğlu Forklift</title>
-    <!-- PDF oluşturma kütüphanesi -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -105,7 +104,7 @@
             background-color: #ffffff;
         }
 
-        /* Düzenlenebilir alanlar ve Inputlar */
+        /* Düzenlenebilir alanlar */
         [contenteditable="true"] {
             outline: none;
             border-bottom: 1px dashed transparent;
@@ -116,31 +115,27 @@
             background-color: #f8fafc;
         }
 
-        /* Boş divler için yer tutucu (placeholder) css'i */
         [contenteditable="true"][placeholder]:empty:before {
             content: attr(placeholder);
             color: #9ca3af;
             cursor: text;
         }
 
-        input[type="text"] {
-            border: none;
-            background: transparent;
-            font-family: inherit;
-            font-size: inherit;
-            color: inherit;
-            width: 100%;
+        /* Yeni Eklenen: Enter ile alt satıra geçebilen giriş alanları (Inputların yerine) */
+        .editable-field {
+            flex-grow: 1;
+            min-height: 18px;
             outline: none;
             border-bottom: 1px dashed transparent;
             padding: 2px 0;
             transition: border-color 0.2s, background-color 0.2s;
+            white-space: pre-wrap; /* Enter'a basınca alt satıra geçmeyi sağlar */
+            word-break: break-word;
         }
-        input[type="text"]:hover, input[type="text"]:focus {
+        
+        .editable-field:hover, .editable-field:focus {
             border-bottom-color: #2563eb;
             background-color: #f8fafc;
-        }
-        input[type="text"]::placeholder {
-            color: #9ca3af;
         }
 
         /* Başlıklar */
@@ -198,7 +193,7 @@
 
         .info-row {
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* Çok satırlı yazılar için üstten hizalama */
             margin-bottom: 8px;
             font-size: 13px;
         }
@@ -207,12 +202,14 @@
             width: 80px;
             color: var(--brand-dark-blue);
             flex-shrink: 0;
+            padding-top: 2px;
         }
 
         .client-name-input {
             font-size: 18px !important;
             font-weight: bold !important;
             color: var(--brand-dark-blue) !important;
+            width: 100%;
         }
 
         .intro-text {
@@ -363,6 +360,7 @@
 
         .hide-on-pdf { display: table-cell; }
 
+        /* PDF Modu - Mobil kuralları geçersiz kılmak için */
         .pdf-mode {
             width: 210mm !important;
             padding: 15mm 20mm !important;
@@ -371,6 +369,18 @@
         }
 
         .pdf-mode .hide-on-pdf { display: none !important; }
+
+        /* PDF çıkışında kutuların her zaman yan yana kalmasını garantileyen kodlar */
+        .pdf-mode .details-section {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+        
+        .pdf-mode .info-box {
+            width: 48% !important;
+            box-sizing: border-box !important;
+        }
 
         @media screen and (max-width: 600px) {
             .controls { flex-direction: column; gap: 10px; }
@@ -399,7 +409,6 @@
     <div class="invoice-wrapper">
         <div id="invoice-container">
 
-            <!-- Başlık -->
             <div class="header-top">
                 <h1 class="company-title" contenteditable="true">İMAMOĞLU FORKLİFT</h1>
             </div>
@@ -408,48 +417,43 @@
             </div>
             <h2 class="doc-title" contenteditable="true">FİYAT TEKLİFİ</h2>
 
-            <!-- Detaylar -->
             <div class="details-section">
-                <!-- SAYIN Kutusu -->
                 <div class="client-info info-box">
                     <div class="box-header">SAYIN</div>
                     <div class="info-row">
-                        <input type="text" class="client-name-input" value="" placeholder="Müşteri / Alıcı Adı" aria-label="Alıcı Adı">
+                        <div class="editable-field client-name-input" contenteditable="true" placeholder="Müşteri / Alıcı Adı"></div>
                     </div>
                     <div class="info-row" style="margin-top: 15px;">
                         <strong>Telefon:</strong>
-                        <input type="text" value="" placeholder="Telefon Numarası" aria-label="Telefon">
+                        <div class="editable-field" contenteditable="true" placeholder="Telefon Numarası"></div>
                     </div>
                     <div class="info-row">
                         <strong>Konu:</strong>
-                        <input type="text" value="" placeholder="Teklif Konusu" aria-label="Konu">
+                        <div class="editable-field" contenteditable="true" placeholder="Teklif Konusu"></div>
                     </div>
                 </div>
 
-                <!-- TEKLİF BİLGİLERİ Kutusu -->
                 <div class="quote-info info-box">
                     <div class="box-header">TEKLİF BİLGİLERİ</div>
                     <div class="info-row">
                         <strong>Teklif No:</strong>
-                        <input type="text" id="quote-no" value="" placeholder="Teklif No" aria-label="Teklif No">
+                        <div id="quote-no" class="editable-field" contenteditable="true" placeholder="Teklif No"></div>
                     </div>
                     <div class="info-row">
                         <strong>Tarih:</strong>
-                        <input type="text" id="quote-date" value="" placeholder="Tarih" aria-label="Tarih">
+                        <div id="quote-date" class="editable-field" contenteditable="true" placeholder="Tarih"></div>
                     </div>
                     <div class="info-row">
                         <strong>Geçerlilik:</strong>
-                        <input type="text" id="quote-validity" value="" placeholder="Geçerlilik Süresi" aria-label="Geçerlilik">
+                        <div id="quote-validity" class="editable-field" contenteditable="true" placeholder="Geçerlilik Süresi"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Giriş Metni -->
             <div class="intro-text" contenteditable="true" placeholder="Giriş Metni">
                 Talebiniz doğrultusunda, belirttiğiniz hizmetlere ilişkin fiyat teklifimiz, kapsamı ile birlikte aşağıda yer almaktadır.
             </div>
 
-            <!-- Tablo -->
             <table id="invoice-table">
                 <thead>
                     <tr>
@@ -476,7 +480,6 @@
                 </tbody>
             </table>
 
-            <!-- Toplamlar -->
             <div class="totals-section">
                 <table class="totals-table">
                     <tr>
@@ -494,7 +497,6 @@
                 </table>
             </div>
 
-            <!-- Notlar -->
             <div class="notes-section">
                 <h3 contenteditable="true">Notlar ve Şartlar</h3>
                 <ul class="notes-list" contenteditable="true">
@@ -507,7 +509,6 @@
                 <div style="margin-top: 5px; font-weight: bold;" contenteditable="true">Saygılarımızla,</div>
             </div>
 
-            <!-- İmzalar -->
             <div class="signatures">
                 <div class="signature-box">
                     <div class="signature-title" contenteditable="true">TEKLİFİ VEREN</div>
@@ -624,8 +625,10 @@
 
             let fileName = 'Fiyat_Teklifi.pdf';
             const teklifNo = document.getElementById('quote-no');
-            if (teklifNo && teklifNo.value.trim()) {
-                fileName = teklifNo.value.trim() + '.pdf';
+            
+            // Value yerine div kullandığımız için innerText olarak değiştirildi
+            if (teklifNo && teklifNo.innerText.trim()) {
+                fileName = teklifNo.innerText.trim() + '.pdf';
             }
 
             const opt = {
@@ -644,19 +647,17 @@
         window.onload = () => {
             const today = new Date();
             
-            // Tarihi bugünün tarihi olarak ayarla
+            // Value yerine div kullandığımız için .innerText'e eşitleniyor
             const quoteDate = document.getElementById('quote-date');
-            quoteDate.value = new Intl.DateTimeFormat('tr-TR').format(today);
+            quoteDate.innerText = new Intl.DateTimeFormat('tr-TR').format(today);
 
-            // Rastgele bir teklif numarası oluştur (Örn: TKF-2026-4821)
             const quoteNo = document.getElementById('quote-no');
             const year = today.getFullYear();
-            const randomNum = Math.floor(1000 + Math.random() * 9000); // 4 haneli rastgele sayı
-            quoteNo.value = `TKF-${year}-${randomNum}`;
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            quoteNo.innerText = `TKF-${year}-${randomNum}`;
 
-            // Geçerlilik süresini varsayılan olarak doldur
             const quoteValidity = document.getElementById('quote-validity');
-            quoteValidity.value = "7 (yedi) gün";
+            quoteValidity.innerText = "7 (yedi) gün";
 
             calculateTotals();
         };
