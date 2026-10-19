@@ -162,14 +162,43 @@
             transition: background 0.3s;
         }
 
-        .btn:hover { background-color: #1d4ed8; }
-        .btn-back { background-color: #64748b; }
-        .btn-back:hover { background-color: #475569; }
-        .btn-add { background-color: #10b981; }
-        .btn-add:hover { background-color: #059669; }
-        .btn-save { background-color: #059669; }
-        .btn-save:hover { background-color: #047857; }
-        .btn-delete { background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-back {
+            background-color: #64748b;
+        }
+
+        .btn-back:hover {
+            background-color: #475569;
+        }
+
+        .btn-add {
+            background-color: #10b981;
+        }
+
+        .btn-add:hover {
+            background-color: #059669;
+        }
+
+        .btn-save {
+            background-color: #059669;
+        }
+
+        .btn-save:hover {
+            background-color: #047857;
+        }
+
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
 
         .tax-control {
             display: flex;
@@ -358,15 +387,47 @@
             vertical-align: middle;
         }
 
-        .col-sno { width: 5%; text-align: center; }
-        .col-desc { width: 45%; }
-        .col-qty { width: 15%; text-align: left; }
-        .col-price { width: 17%; text-align: left; }
-        .col-total { width: 18%; text-align: left; font-weight: bold; }
-        .col-action { width: 60px; text-align: center; }
+        .col-sno {
+            width: 5%;
+            text-align: center;
+        }
 
-        .desc-title { font-weight: bold; margin-bottom: 2px; color: #111; }
-        .desc-sub { font-size: 11px; color: #64748b; }
+        .col-desc {
+            width: 43%;
+        }
+
+        .col-qty {
+            width: 15%;
+            text-align: left;
+        }
+
+        .col-price {
+            width: 17%;
+            text-align: left;
+        }
+
+        .col-total {
+            width: 20%;
+            text-align: left;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .col-action {
+            width: 60px;
+            text-align: center;
+        }
+
+        .desc-title {
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #111;
+        }
+
+        .desc-sub {
+            font-size: 11px;
+            color: #64748b;
+        }
 
         /* Toplamlar Tablosu */
         .totals-section {
@@ -486,15 +547,19 @@
             display: table-cell;
         }
 
-        /* PDF Modu - Telefonda dahi masaüstü A4 düzenini zorunlu kılar */
+        /* PDF Modu - Tüm cihazlarda A4 Ortalamayı Garanti Eder */
         .pdf-mode {
             width: 210mm !important;
             min-width: 210mm !important;
             max-width: 210mm !important;
             padding: 15mm 20mm !important;
+            margin: 0 auto !important;
             transform: none !important;
             background-color: #ffffff !important;
             box-sizing: border-box !important;
+            position: relative !important;
+            left: 0 !important;
+            right: 0 !important;
         }
 
         .pdf-mode .hide-on-pdf {
@@ -1135,12 +1200,11 @@
         }
 
         // ==========================================
-        // 5. PDF OLUŞTURMA (Mobil Ekran Kaymalarını Çözen Yapı)
+        // 5. PDF OLUŞTURMA (Mobil Ekran Kaymalarını Çözen Tam Hizalama)
         // ==========================================
         async function generatePDF() {
             const element = document.getElementById('invoice-container');
-            
-            // Mobil cihazlarda ekran kaydırılmışsa oluşabilecek boşluk kaymalarını engeller
+
             window.scrollTo(0, 0);
             element.classList.add('pdf-mode');
 
@@ -1155,12 +1219,13 @@
                 margin: 0,
                 filename: fileName,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
+                html2canvas: {
+                    scale: 2,
                     useCORS: true,
-                    windowWidth: 1024, // Mobil cihazlarda masaüstü genişliğinde render alır
+                    windowWidth: 800, // Mobil ekran dar olsa da tuvali tam 800px sabit genişlikte renderlar
                     scrollX: 0,
-                    scrollY: 0
+                    scrollY: 0,
+                    x: 0
                 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
