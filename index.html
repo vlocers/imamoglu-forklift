@@ -3,8 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Teklif Oluşturucu - İmamoğlu Forklift</title>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- html2pdf JS Client -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -25,6 +28,109 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+            gap: 10px;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+            color: var(--brand-dark-blue);
+            font-size: 22px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .proposal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 600px;
+        }
+
+        .proposal-table th {
+            background-color: var(--brand-dark-blue);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--brand-dark-blue);
+        }
+
+        .proposal-table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .proposal-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .action-btn-group {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .btn-view {
+            background-color: #2563eb;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-view:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-delete-item {
+            background-color: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-delete-item:hover {
+            background-color: #dc2626;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #64748b;
+            padding: 20px !important;
+            font-style: italic;
         }
 
         /* Kontrol Paneli */
@@ -34,19 +140,21 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             margin-bottom: 20px;
             background: white;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            flex-wrap: wrap;
         }
 
         .btn {
             background-color: #2563eb;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 16px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
@@ -55,8 +163,12 @@
         }
 
         .btn:hover { background-color: #1d4ed8; }
+        .btn-back { background-color: #64748b; }
+        .btn-back:hover { background-color: #475569; }
         .btn-add { background-color: #10b981; }
         .btn-add:hover { background-color: #059669; }
+        .btn-save { background-color: #059669; }
+        .btn-save:hover { background-color: #047857; }
         .btn-delete { background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
         .tax-control {
@@ -94,6 +206,7 @@
             max-width: 800px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             overflow-x: auto;
+            border-radius: 8px;
         }
 
         #invoice-container {
@@ -110,7 +223,9 @@
             border-bottom: 1px dashed transparent;
             transition: border-color 0.2s;
         }
-        [contenteditable="true"]:hover, [contenteditable="true"]:focus {
+
+        [contenteditable="true"]:hover,
+        [contenteditable="true"]:focus {
             border-bottom: 1px dashed #2563eb;
             background-color: #f8fafc;
         }
@@ -121,7 +236,6 @@
             cursor: text;
         }
 
-        /* Yeni Eklenen: Enter ile alt satıra geçebilen giriş alanları (Inputların yerine) */
         .editable-field {
             flex-grow: 1;
             min-height: 18px;
@@ -129,11 +243,12 @@
             border-bottom: 1px dashed transparent;
             padding: 2px 0;
             transition: border-color 0.2s, background-color 0.2s;
-            white-space: pre-wrap; /* Enter'a basınca alt satıra geçmeyi sağlar */
+            white-space: pre-wrap;
             word-break: break-word;
         }
-        
-        .editable-field:hover, .editable-field:focus {
+
+        .editable-field:hover,
+        .editable-field:focus {
             border-bottom-color: #2563eb;
             background-color: #f8fafc;
         }
@@ -168,7 +283,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Müşteri ve Teklif Detayları (Kutular) */
+        /* Müşteri ve Teklif Detayları */
         .details-section {
             display: flex;
             justify-content: space-between;
@@ -181,6 +296,7 @@
             border: 1px solid var(--border-color);
             padding: 12px 15px;
             background-color: var(--box-bg);
+            box-sizing: border-box;
         }
 
         .box-header {
@@ -193,7 +309,7 @@
 
         .info-row {
             display: flex;
-            align-items: flex-start; /* Çok satırlı yazılar için üstten hizalama */
+            align-items: flex-start;
             margin-bottom: 8px;
             font-size: 13px;
         }
@@ -220,14 +336,14 @@
         }
 
         /* Ana Tablo */
-        table {
+        table.invoice-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 0px;
             font-size: 13px;
         }
 
-        th {
+        table.invoice-table th {
             background-color: var(--brand-dark-blue);
             color: white;
             font-weight: bold;
@@ -236,7 +352,7 @@
             border: 1px solid var(--brand-dark-blue);
         }
 
-        td {
+        table.invoice-table td {
             padding: 8px 10px;
             border: 1px solid var(--border-color);
             vertical-align: middle;
@@ -346,8 +462,16 @@
             margin-bottom: 35px;
         }
 
-        .signature-name { font-weight: bold; font-size: 13px; color: #111; }
-        .signature-company { font-size: 12px; color: #64748b; }
+        .signature-name {
+            font-weight: bold;
+            font-size: 13px;
+            color: #111;
+        }
+
+        .signature-company {
+            font-size: 12px;
+            color: #64748b;
+        }
 
         /* Footer */
         .footer {
@@ -358,177 +482,276 @@
             color: #64748b;
         }
 
-        .hide-on-pdf { display: table-cell; }
-
-        /* PDF Modu - Mobil kuralları geçersiz kılmak için */
-        .pdf-mode {
-            width: 210mm !important;
-            padding: 15mm 20mm !important;
-            max-width: none !important;
-            transform: none !important;
+        .hide-on-pdf {
+            display: table-cell;
         }
 
-        .pdf-mode .hide-on-pdf { display: none !important; }
+        /* PDF Modu - Telefonda dahi masaüstü A4 düzenini zorunlu kılar */
+        .pdf-mode {
+            width: 210mm !important;
+            min-width: 210mm !important;
+            max-width: 210mm !important;
+            padding: 15mm 20mm !important;
+            transform: none !important;
+            background-color: #ffffff !important;
+            box-sizing: border-box !important;
+        }
 
-        /* PDF çıkışında kutuların her zaman yan yana kalmasını garantileyen kodlar */
+        .pdf-mode .hide-on-pdf {
+            display: none !important;
+        }
+
         .pdf-mode .details-section {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
+            justify-content: space-between !important;
+            gap: 15px !important;
         }
-        
+
         .pdf-mode .info-box {
             width: 48% !important;
             box-sizing: border-box !important;
         }
 
-        @media screen and (max-width: 600px) {
-            .controls { flex-direction: column; gap: 10px; }
-            .btn { width: 100%; }
-            .tax-control { width: 100%; margin-left: 0; justify-content: space-between; }
-            .details-section { flex-direction: column; }
-            .info-box { width: 100%; box-sizing: border-box; }
+        /* MOBİL EKRAN STİLLERİ (Sadece tarayıcı ekranı için) */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .dashboard-container {
+                padding: 15px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .dashboard-header .btn {
+                width: 100%;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .controls .btn {
+                width: 100%;
+            }
+
+            .tax-control {
+                width: 100%;
+                margin-left: 0;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="controls">
-        <button class="btn btn-add" onclick="addRow()">+ Yeni Satır Ekle</button>
-        <button class="btn" onclick="generatePDF()">📄 PDF Olarak İndir</button>
-        <label class="tax-control" for="tax-inclusion">
-            KDV Durumu
-            <select id="tax-inclusion" class="tax-inclusion">
-                <option value="excluded">KDV Hariç</option>
-                <option value="included">KDV Dahil (+%20)</option>
-            </select>
-        </label>
-    </div>
+    <!-- 1. DASHBOARD EKRANI (TEKLİF LİSTESİ) -->
+    <div id="dashboard-view" class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>İmamoğlu Forklift - Teklif Yönetimi</h2>
+            <button class="btn btn-add" onclick="openNewProposal()">+ Yeni Teklif Oluştur</button>
+        </div>
 
-    <div class="invoice-wrapper">
-        <div id="invoice-container">
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="search-input" placeholder="Müşteri adı, teklif no veya konu ile ara..."
+                oninput="filterProposals()"
+                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none;">
+        </div>
 
-            <div class="header-top">
-                <h1 class="company-title" contenteditable="true">İMAMOĞLU FORKLİFT</h1>
-            </div>
-            <div class="sub-header-info">
-                Yetkili: <span contenteditable="true">Murat Güzel</span> &nbsp;&nbsp;&nbsp;&nbsp; Tel: <span contenteditable="true">0539 325 84 67</span>
-            </div>
-            <h2 class="doc-title" contenteditable="true">FİYAT TEKLİFİ</h2>
-
-            <div class="details-section">
-                <div class="client-info info-box">
-                    <div class="box-header">SAYIN</div>
-                    <div class="info-row">
-                        <div class="editable-field client-name-input" contenteditable="true" placeholder="Müşteri / Alıcı Adı"></div>
-                    </div>
-                    <div class="info-row" style="margin-top: 15px;">
-                        <strong>Telefon:</strong>
-                        <div class="editable-field" contenteditable="true" placeholder="Telefon Numarası"></div>
-                    </div>
-                    <div class="info-row">
-                        <strong>Konu:</strong>
-                        <div class="editable-field" contenteditable="true" placeholder="Teklif Konusu"></div>
-                    </div>
-                </div>
-
-                <div class="quote-info info-box">
-                    <div class="box-header">TEKLİF BİLGİLERİ</div>
-                    <div class="info-row">
-                        <strong>Teklif No:</strong>
-                        <div id="quote-no" class="editable-field" contenteditable="true" placeholder="Teklif No"></div>
-                    </div>
-                    <div class="info-row">
-                        <strong>Tarih:</strong>
-                        <div id="quote-date" class="editable-field" contenteditable="true" placeholder="Tarih"></div>
-                    </div>
-                    <div class="info-row">
-                        <strong>Geçerlilik:</strong>
-                        <div id="quote-validity" class="editable-field" contenteditable="true" placeholder="Geçerlilik Süresi"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="intro-text" contenteditable="true" placeholder="Giriş Metni">
-                Talebiniz doğrultusunda, belirttiğiniz hizmetlere ilişkin fiyat teklifimiz, kapsamı ile birlikte aşağıda yer almaktadır.
-            </div>
-
-            <table id="invoice-table">
+        <div class="table-responsive">
+            <table class="proposal-table">
                 <thead>
                     <tr>
-                        <th class="col-sno">S.No</th>
-                        <th class="col-desc">HİZMET AÇIKLAMASI</th>
-                        <th class="col-qty">MİKTAR</th>
-                        <th class="col-price">BİRİM FİYAT</th>
-                        <th class="col-total">TUTAR</th>
-                        <th class="col-action hide-on-pdf">İşlem</th>
+                        <th>Teklif No</th>
+                        <th>Müşteri / Alıcı</th>
+                        <th>Konu</th>
+                        <th>Tarih</th>
+                        <th>Genel Toplam</th>
+                        <th style="width: 140px; text-align: center;">İşlemler</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
+                <tbody id="proposal-list-body">
                     <tr>
-                        <td class="col-sno" contenteditable="true">1</td>
-                        <td class="col-desc">
-                            <div class="desc-title" contenteditable="true" placeholder="Hizmet Adı"></div>
-                            <div class="desc-sub" contenteditable="true" placeholder="Hizmet açıklaması veya detayı"></div>
-                        </td>
-                        <td class="col-qty row-qty" contenteditable="true" placeholder="Miktar">1 Adet</td>
-                        <td class="col-price row-price" contenteditable="true" placeholder="Birim Fiyat">0,00 TL</td>
-                        <td class="col-total row-total">0,00 TL</td>
-                        <td class="col-action hide-on-pdf"><button class="btn-delete" onclick="deleteRow(this)">Sil</button></td>
+                        <td colspan="6" class="empty-msg">Yükleniyor...</td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
 
-            <div class="totals-section">
-                <table class="totals-table">
-                    <tr>
-                        <td>ARA TOPLAM</td>
-                        <td id="val-subtotal">0,00 TL</td>
-                    </tr>
-                    <tr>
-                        <td>KDV (<span contenteditable="true" id="tax-rate">%20</span>)</td>
-                        <td id="val-tax">0,00 TL</td>
-                    </tr>
-                    <tr class="grand-total-row">
-                        <td>GENEL TOPLAM</td>
-                        <td id="val-grandtotal">0,00 TL</td>
-                    </tr>
+    <!-- 2. TEKLİF EDİTÖR EKRANI -->
+    <div id="editor-view" style="display: none; width: 100%; max-width: 800px;">
+        <div class="controls">
+            <button class="btn btn-back" onclick="showDashboard()">⬅ Listeye Dön</button>
+            <button class="btn btn-add" onclick="addRow()">+ Yeni Satır</button>
+            <button class="btn btn-save" onclick="saveProposal()">💾 Kaydet</button>
+            <button class="btn" onclick="generatePDF()">📄 PDF İndir</button>
+
+            <label class="tax-control" for="tax-inclusion">
+                KDV Durumu
+                <select id="tax-inclusion" class="tax-inclusion">
+                    <option value="excluded">KDV Hariç</option>
+                    <option value="included">KDV Dahil (+%20)</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="invoice-wrapper">
+            <div id="invoice-container">
+
+                <div class="header-top">
+                    <h1 class="company-title" contenteditable="true" id="company-title">İMAMOĞLU FORKLİFT</h1>
+                </div>
+                <div class="sub-header-info">
+                    Yetkili: <span contenteditable="true" id="author-name">Murat Güzel</span> &nbsp;&nbsp;&nbsp;&nbsp;
+                    Tel: <span contenteditable="true" id="author-phone">0539 325 84 67</span>
+                </div>
+                <h2 class="doc-title" contenteditable="true" id="doc-title">FİYAT TEKLİFİ</h2>
+
+                <div class="details-section">
+                    <div class="client-info info-box">
+                        <div class="box-header">SAYIN</div>
+                        <div class="info-row">
+                            <div id="client-name" class="editable-field client-name-input" contenteditable="true"
+                                placeholder="Müşteri / Alıcı Adı"></div>
+                        </div>
+                        <div class="info-row" style="margin-top: 15px;">
+                            <strong>Telefon:</strong>
+                            <div id="client-phone" class="editable-field" contenteditable="true"
+                                placeholder="Telefon Numarası"></div>
+                        </div>
+                        <div class="info-row">
+                            <strong>Konu:</strong>
+                            <div id="quote-subject" class="editable-field" contenteditable="true"
+                                placeholder="Teklif Konusu"></div>
+                        </div>
+                    </div>
+
+                    <div class="quote-info info-box">
+                        <div class="box-header">TEKLİF BİLGİLERİ</div>
+                        <div class="info-row">
+                            <strong>Teklif No:</strong>
+                            <div id="quote-no" class="editable-field" contenteditable="true" placeholder="Teklif No">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <strong>Tarih:</strong>
+                            <div id="quote-date" class="editable-field" contenteditable="true" placeholder="Tarih">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <strong>Geçerlilik:</strong>
+                            <div id="quote-validity" class="editable-field" contenteditable="true"
+                                placeholder="Geçerlilik Süresi"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="intro-text" class="intro-text" contenteditable="true" placeholder="Giriş Metni">
+                    Talebiniz doğrultusunda, belirttiğiniz hizmetlere ilişkin fiyat teklifimiz, kapsamı ile birlikte
+                    aşağıda yer almaktadır.
+                </div>
+
+                <table id="invoice-table" class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th class="col-sno">S.No</th>
+                            <th class="col-desc">HİZMET AÇIKLAMASI</th>
+                            <th class="col-qty">MİKTAR</th>
+                            <th class="col-price">BİRİM FİYAT</th>
+                            <th class="col-total">TUTAR</th>
+                            <th class="col-action hide-on-pdf">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Satırlar dinamik dolacak -->
+                    </tbody>
                 </table>
-            </div>
 
-            <div class="notes-section">
-                <h3 contenteditable="true">Notlar ve Şartlar</h3>
-                <ul class="notes-list" contenteditable="true">
-                    <li>KDV, yukarıdaki KDV durumu seçimine göre hesaplanır.</li>
-                    <li>Teklif, düzenlendiği tarihten itibaren teklif bilgilerindeki geçerlilik süresi kadar geçerlidir.</li>
-                    <li>Ödeme, hizmetin tamamlanmasını takiben yapılır. (Ödeme koşulları karşılıklı mutabakatla belirlenebilir.)</li>
-                    <li>Malzeme cinsi, ölçü ve uygulama alanına bağlı değişiklikler teklifte farklılığa yol açabilir.</li>
-                </ul>
-                <div style="margin-top: 15px;" contenteditable="true">Bilgilerinize sunar, iyi çalışmalar dileriz.</div>
-                <div style="margin-top: 5px; font-weight: bold;" contenteditable="true">Saygılarımızla,</div>
-            </div>
-
-            <div class="signatures">
-                <div class="signature-box">
-                    <div class="signature-title" contenteditable="true">TEKLİFİ VEREN</div>
-                    <div class="signature-name" contenteditable="true">Murat GÜZEL</div>
-                    <div class="signature-company" contenteditable="true">İmamoğlu Forklift</div>
+                <div class="totals-section">
+                    <table class="totals-table">
+                        <tr>
+                            <td>ARA TOPLAM</td>
+                            <td id="val-subtotal">0,00 TL</td>
+                        </tr>
+                        <tr>
+                            <td>KDV (<span contenteditable="true" id="tax-rate">%20</span>)</td>
+                            <td id="val-tax">0,00 TL</td>
+                        </tr>
+                        <tr class="grand-total-row">
+                            <td>GENEL TOPLAM</td>
+                            <td id="val-grandtotal">0,00 TL</td>
+                        </tr>
+                    </table>
                 </div>
-                <div class="signature-box">
-                    <div class="signature-title" contenteditable="true">TEKLİFİ ONAYLAYAN</div>
-                    <div class="signature-name" contenteditable="true">Kaşe / İmza</div>
+
+                <div class="notes-section">
+                    <h3 contenteditable="true">Notlar ve Şartlar</h3>
+                    <ul class="notes-list" contenteditable="true" id="notes-list">
+                        <li>KDV, yukarıdaki KDV durumu seçimine göre hesaplanır.</li>
+                        <li>Teklif, düzenlendiği tarihten itibaren teklif bilgilerindeki geçerlilik süresi kadar
+                            geçerlidir.</li>
+                        <li>Ödeme, hizmetin tamamlanmasını takiben yapılır. (Ödeme koşulları karşılıklı mutabakatla
+                            belirlenebilir.)</li>
+                        <li>Malzeme cinsi, ölçü ve uygulama alanına bağlı değişiklikler teklifte farklılığa yol
+                            açabilir.</li>
+                    </ul>
+                    <div style="margin-top: 15px;" contenteditable="true" id="closing-msg">Bilgilerinize sunar, iyi
+                        çalışmalar dileriz.</div>
+                    <div style="margin-top: 5px; font-weight: bold;" contenteditable="true" id="regards-msg">
+                        Saygılarımızla,</div>
                 </div>
-            </div>
 
-            <div class="footer hide-on-pdf" contenteditable="true" style="color: transparent;">
-                .
-            </div>
+                <div class="signatures">
+                    <div class="signature-box">
+                        <div class="signature-title" contenteditable="true" id="sig-giver-title">TEKLİFİ VEREN</div>
+                        <div class="signature-name" contenteditable="true" id="sig-giver-name">Murat GÜZEL</div>
+                        <div class="signature-company" contenteditable="true" id="sig-giver-company">İmamoğlu Forklift
+                        </div>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-title" contenteditable="true" id="sig-approver-title">TEKLİFİ ONAYLAYAN
+                        </div>
+                        <div class="signature-name" contenteditable="true" id="sig-approver-name">Kaşe / İmza</div>
+                    </div>
+                </div>
 
+                <div class="footer hide-on-pdf" contenteditable="true" style="color: transparent;">
+                    .
+                </div>
+
+            </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // 1. SUPABASE BİLGİLERİ
+        // ==========================================
+        const SUPABASE_URL = 'https://ozdkjqiianqjjczyvqsj.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_mn4Ru0Au8V95XAQ-xBXMtg_xJVIUGE7';
+
+        let supabaseClient = null;
+        if (typeof supabase !== 'undefined') {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+
+        let allProposals = [];
+        let currentProposalId = null;
+
+        // ==========================================
+        // 2. YARDIMCI TARİH VE NUMARA FONKSİYONLARI
+        // ==========================================
         function parseTurkishNumber(str) {
             if (!str) return 0;
             let cleaned = str.replace(/[A-Za-z\s]/g, '').trim();
@@ -544,19 +767,43 @@
             return num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        function convertToISODate(trDateStr) {
+            if (!trDateStr) return null;
+            const parts = trDateStr.trim().split('.');
+            if (parts.length === 3) {
+                const day = parts[0].padStart(2, '0');
+                const month = parts[1].padStart(2, '0');
+                const year = parts[2];
+                return `${year}-${month}-${day}`;
+            }
+            return trDateStr;
+        }
+
+        function convertToTrDate(isoDateStr) {
+            if (!isoDateStr) return '';
+            const parts = isoDateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            }
+            return isoDateStr;
+        }
+
         function calculateTotals() {
             const rows = document.querySelectorAll('#table-body tr');
             let subTotal = 0;
 
             rows.forEach(row => {
-                const qtyText = row.querySelector('.row-qty').innerText;
-                const priceText = row.querySelector('.row-price').innerText;
+                const qtyText = row.querySelector('.row-qty')?.innerText || '';
+                const priceText = row.querySelector('.row-price')?.innerText || '';
 
                 const qty = parseTurkishNumber(qtyText);
                 const price = parseTurkishNumber(priceText);
                 const total = qty * price;
 
-                row.querySelector('.row-total').innerText = formatTurkishNumber(total) + ' TL';
+                const totalElem = row.querySelector('.row-total');
+                if (totalElem) {
+                    totalElem.innerText = formatTurkishNumber(total) + ' TL';
+                }
                 subTotal += total;
             });
 
@@ -564,8 +811,8 @@
             let taxRate = parseTurkishNumber(taxRateText) || 20;
 
             const taxIncluded = document.getElementById('tax-inclusion').value === 'included';
-            let taxTotal;
-            let grandTotal;
+            let taxTotal = 0;
+            let grandTotal = 0;
 
             if (taxIncluded) {
                 taxTotal = subTotal * (taxRate / 100);
@@ -590,20 +837,20 @@
 
         document.getElementById('tax-inclusion').addEventListener('change', calculateTotals);
 
-        function addRow() {
+        function addRow(data = null) {
             const tbody = document.getElementById('table-body');
             const rowCount = tbody.children.length + 1;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="col-sno" contenteditable="true">${rowCount}</td>
+                <td class="col-sno" contenteditable="true">${data ? data.sira_no : rowCount}</td>
                 <td class="col-desc">
-                    <div class="desc-title" contenteditable="true" placeholder="Hizmet Adı"></div>
-                    <div class="desc-sub" contenteditable="true" placeholder="Hizmet açıklaması veya detayı"></div>
+                    <div class="desc-title" contenteditable="true" placeholder="Hizmet Adı">${data ? (data.hizmet_adi || '') : ''}</div>
+                    <div class="desc-sub" contenteditable="true" placeholder="Hizmet açıklaması veya detayı">${data ? (data.hizmet_aciklamasi || '') : ''}</div>
                 </td>
-                <td class="col-qty row-qty" contenteditable="true" placeholder="Miktar">1 Adet</td>
-                <td class="col-price row-price" contenteditable="true" placeholder="Birim Fiyat">0,00 TL</td>
-                <td class="col-total row-total">0,00 TL</td>
+                <td class="col-qty row-qty" contenteditable="true" placeholder="Miktar">${data ? (data.miktar || '1 Adet') : '1 Adet'}</td>
+                <td class="col-price row-price" contenteditable="true" placeholder="Birim Fiyat">${data ? (data.birim_fiyat || '0,00 TL') : '0,00 TL'}</td>
+                <td class="col-total row-total">${data ? (data.toplam_tutar || '0,00 TL') : '0,00 TL'}</td>
                 <td class="col-action hide-on-pdf"><button class="btn-delete" onclick="deleteRow(this)">Sil</button></td>
             `;
             tbody.appendChild(tr);
@@ -619,14 +866,287 @@
             calculateTotals();
         }
 
+        // ==========================================
+        // 3. EKRAN GEÇİŞLERİ VE ARAMA
+        // ==========================================
+        function showDashboard() {
+            document.getElementById('editor-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'block';
+            loadProposals();
+        }
+
+        function showEditor() {
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('editor-view').style.display = 'block';
+        }
+
+        function filterProposals() {
+            const searchInput = document.getElementById('search-input');
+            if (!searchInput) return;
+
+            const searchTerm = searchInput.value.toLocaleLowerCase('tr-TR').trim();
+
+            const filtered = allProposals.filter(item => {
+                const musteri = (item.musteri_adi || '').toLocaleLowerCase('tr-TR');
+                const teklifNo = (item.teklif_no || '').toLocaleLowerCase('tr-TR');
+                const konu = (item.konu || '').toLocaleLowerCase('tr-TR');
+
+                return musteri.includes(searchTerm) ||
+                    teklifNo.includes(searchTerm) ||
+                    konu.includes(searchTerm);
+            });
+
+            renderProposalList(filtered);
+        }
+
+        function renderProposalList(proposals) {
+            const tbody = document.getElementById('proposal-list-body');
+
+            if (!proposals || proposals.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">Aramanıza uygun teklif bulunamadı.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            proposals.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.teklif_no || '-'}</strong></td>
+                    <td>${item.musteri_adi || '-'}</td>
+                    <td>${item.konu || '-'}</td>
+                    <td>${convertToTrDate(item.tarih) || item.tarih || '-'}</td>
+                    <td><strong>${formatTurkishNumber(item.genel_toplam || 0)} TL</strong></td>
+                    <td style="text-align: center;">
+                        <div class="action-btn-group">
+                            <button class="btn-view" onclick="editProposal('${item.id}')">Görüntüle</button>
+                            <button class="btn-delete-item" onclick="deleteProposal('${item.id}')">Sil</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ==========================================
+        // 4. SUPABASE VERİ İŞLEMLERİ
+        // ==========================================
+        async function loadProposals() {
+            const tbody = document.getElementById('proposal-list-body');
+
+            if (!supabaseClient) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">Supabase henüz yapılandırılmadı.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">Teklifler yükleniyor...</td></tr>`;
+
+            const { data, error } = await supabaseClient
+                .from('teklifler')
+                .select('*')
+                .order('olusturulma_tarihi', { ascending: false });
+
+            if (error) {
+                console.error('Hata:', error);
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">Veriler çekilirken hata oluştu: ${error.message}</td></tr>`;
+                return;
+            }
+
+            allProposals = data || [];
+
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+
+            renderProposalList(allProposals);
+        }
+
+        function openNewProposal() {
+            currentProposalId = null;
+            document.getElementById('table-body').innerHTML = '';
+
+            document.getElementById('client-name').innerText = '';
+            document.getElementById('client-phone').innerText = '';
+            document.getElementById('quote-subject').innerText = '';
+
+            const today = new Date();
+            document.getElementById('quote-date').innerText = new Intl.DateTimeFormat('tr-TR').format(today);
+            const year = today.getFullYear();
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('quote-no').innerText = `TKF-${year}-${randomNum}`;
+            document.getElementById('quote-validity').innerText = "7 (yedi) gün";
+            document.getElementById('tax-inclusion').value = 'excluded';
+
+            addRow();
+            showEditor();
+        }
+
+        async function editProposal(id) {
+            if (!supabaseClient) return;
+
+            const { data: proposal, error } = await supabaseClient
+                .from('teklifler')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !proposal) {
+                alert('Teklif detayları alınamadı!');
+                return;
+            }
+
+            currentProposalId = proposal.id;
+
+            document.getElementById('quote-no').innerText = proposal.teklif_no || '';
+            document.getElementById('client-name').innerText = proposal.musteri_adi || '';
+            document.getElementById('client-phone').innerText = proposal.musteri_telefon || '';
+            document.getElementById('quote-subject').innerText = proposal.konu || '';
+            document.getElementById('quote-date').innerText = convertToTrDate(proposal.tarih) || proposal.tarih || '';
+            document.getElementById('quote-validity').innerText = proposal.gecerlilik_suresi || '';
+            document.getElementById('tax-inclusion').value = proposal.kdv_durumu || 'excluded';
+
+            if (proposal.kdv_orani) {
+                document.getElementById('tax-rate').innerText = `%${proposal.kdv_orani}`;
+            }
+
+            const { data: items } = await supabaseClient
+                .from('teklif_kalemleri')
+                .select('*')
+                .eq('teklif_id', id)
+                .order('sira_no', { ascending: true });
+
+            document.getElementById('table-body').innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(item => addRow(item));
+            } else {
+                addRow();
+            }
+
+            calculateTotals();
+            showEditor();
+        }
+
+        async function saveProposal() {
+            if (!supabaseClient) {
+                alert('Lütfen önce Supabase yapılandırmasını kontrol edin!');
+                return;
+            }
+
+            const teklifNo = document.getElementById('quote-no').innerText.trim();
+            const musteriAdi = document.getElementById('client-name').innerText.trim();
+            const musteriTelefon = document.getElementById('client-phone').innerText.trim();
+            const konu = document.getElementById('quote-subject').innerText.trim();
+            const tarihRaw = document.getElementById('quote-date').innerText.trim();
+            const tarih = convertToISODate(tarihRaw);
+            const gecerlilikSuresi = document.getElementById('quote-validity').innerText.trim();
+            const kdvDurumu = document.getElementById('tax-inclusion').value;
+            const kdvOrani = parseTurkishNumber(document.getElementById('tax-rate').innerText) || 20;
+
+            const araToplam = parseTurkishNumber(document.getElementById('val-subtotal').innerText);
+            const kdvTutari = parseTurkishNumber(document.getElementById('val-tax').innerText);
+            const genelToplam = parseTurkishNumber(document.getElementById('val-grandtotal').innerText);
+
+            const payload = {
+                teklif_no: teklifNo,
+                musteri_adi: musteriAdi,
+                musteri_telefon: musteriTelefon,
+                konu: konu,
+                tarih: tarih,
+                gecerlilik_suresi: gecerlilikSuresi,
+                kdv_durumu: kdvDurumu,
+                kdv_orani: kdvOrani,
+                ara_toplam: araToplam,
+                kdv_tutari: kdvTutari,
+                genel_toplam: genelToplam,
+                guncellenme_tarihi: new Date().toISOString()
+            };
+
+            let savedProposalId = currentProposalId;
+
+            if (currentProposalId) {
+                const { error } = await supabaseClient
+                    .from('teklifler')
+                    .update(payload)
+                    .eq('id', currentProposalId);
+
+                if (error) {
+                    alert('Teklif güncellenirken hata oluştu: ' + error.message);
+                    return;
+                }
+
+                await supabaseClient.from('teklif_kalemleri').delete().eq('teklif_id', currentProposalId);
+            } else {
+                const { data, error } = await supabaseClient
+                    .from('teklifler')
+                    .insert([payload])
+                    .select();
+
+                if (error) {
+                    alert('Teklif kaydedilirken hata oluştu: ' + error.message);
+                    return;
+                }
+
+                savedProposalId = data[0].id;
+                currentProposalId = savedProposalId;
+            }
+
+            const rows = document.querySelectorAll('#table-body tr');
+            const itemsToInsert = [];
+
+            rows.forEach((row, index) => {
+                itemsToInsert.push({
+                    teklif_id: savedProposalId,
+                    sira_no: index + 1,
+                    hizmet_adi: row.querySelector('.desc-title')?.innerText || '',
+                    hizmet_aciklamasi: row.querySelector('.desc-sub')?.innerText || '',
+                    miktar: row.querySelector('.row-qty')?.innerText || '',
+                    birim_fiyat: row.querySelector('.row-price')?.innerText || '',
+                    toplam_tutar: row.querySelector('.row-total')?.innerText || ''
+                });
+            });
+
+            if (itemsToInsert.length > 0) {
+                const { error: itemErr } = await supabaseClient
+                    .from('teklif_kalemleri')
+                    .insert(itemsToInsert);
+
+                if (itemErr) {
+                    console.error('Kalemler kaydedilemedi:', itemErr);
+                }
+            }
+
+            alert('Teklif başarıyla kaydedildi!');
+            showDashboard();
+        }
+
+        async function deleteProposal(id) {
+            if (!supabaseClient) return;
+
+            if (confirm('Bu teklifi silmek istediğinize emin misiniz?')) {
+                const { error } = await supabaseClient
+                    .from('teklifler')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    alert('Silinirken hata oluştu: ' + error.message);
+                } else {
+                    loadProposals();
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. PDF OLUŞTURMA (Mobil Ekran Kaymalarını Çözen Yapı)
+        // ==========================================
         async function generatePDF() {
             const element = document.getElementById('invoice-container');
+            
+            // Mobil cihazlarda ekran kaydırılmışsa oluşabilecek boşluk kaymalarını engeller
+            window.scrollTo(0, 0);
             element.classList.add('pdf-mode');
 
             let fileName = 'Fiyat_Teklifi.pdf';
             const teklifNo = document.getElementById('quote-no');
-            
-            // Value yerine div kullandığımız için innerText olarak değiştirildi
+
             if (teklifNo && teklifNo.innerText.trim()) {
                 fileName = teklifNo.innerText.trim() + '.pdf';
             }
@@ -634,32 +1154,29 @@
             const opt = {
                 margin: 0,
                 filename: fileName,
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 2, useCORS: true },
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    windowWidth: 1024, // Mobil cihazlarda masaüstü genişliğinde render alır
+                    scrollX: 0,
+                    scrollY: 0
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            await html2pdf().set(opt).from(element).save();
-            element.classList.remove('pdf-mode');
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("PDF oluşturma hatası:", err);
+            } finally {
+                element.classList.remove('pdf-mode');
+            }
         }
 
-        // Sayfa yüklendiğinde otomatik doldurulacak kısımlar
+        // İlk Yükleme
         window.onload = () => {
-            const today = new Date();
-            
-            // Value yerine div kullandığımız için .innerText'e eşitleniyor
-            const quoteDate = document.getElementById('quote-date');
-            quoteDate.innerText = new Intl.DateTimeFormat('tr-TR').format(today);
-
-            const quoteNo = document.getElementById('quote-no');
-            const year = today.getFullYear();
-            const randomNum = Math.floor(1000 + Math.random() * 9000);
-            quoteNo.innerText = `TKF-${year}-${randomNum}`;
-
-            const quoteValidity = document.getElementById('quote-validity');
-            quoteValidity.innerText = "7 (yedi) gün";
-
-            calculateTotals();
+            loadProposals();
         };
     </script>
 </body>
